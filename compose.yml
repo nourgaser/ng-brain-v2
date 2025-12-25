@@ -28,6 +28,7 @@ services:
     environment:
       - PUID=1001
       - PGID=1001
+      - SB_USER=admin:WsJBvom7PigBNQQ2Ihl6Aia8U69nc3US
     volumes:
       # 1. The Virtual View (Where the symlinks live)
       - ./spaces/writer:/space

@@ -84,16 +84,34 @@ func rebuild() {
 }
 
 func syncFiles(config Config) {
+	// 1. Ensure Shared Plugin Storage Exists (The "Binaries")
+	// SilverBullet downloads code here. We make it shared so we download once, run everywhere.
+	sharedPlugDir := filepath.Join(RepoRoot, "_plug")
+	os.MkdirAll(sharedPlugDir, 0777)
+	os.Chmod(sharedPlugDir, 0777)
+
 	for spaceName, rules := range config.Spaces {
 		spaceDir := filepath.Join(SpacesRoot, spaceName)
+		
+		// Create & Open Permissions
 		os.MkdirAll(spaceDir, 0755)
-		os.Chmod(spaceDir, 0777) // Fix permissions for container user
+		os.Chmod(spaceDir, 0777)
 
+		// Wipe contents
 		files, _ := ioutil.ReadDir(spaceDir)
 		for _, f := range files {
 			os.RemoveAll(filepath.Join(spaceDir, f.Name()))
 		}
 
+		// --- SYSTEM FORCE LINKS ---
+		// 1. Link the Compiled Code folder (_plug)
+		linkFile("_plug", spaceDir)
+		// 2. Link the Library Definitions (Library)
+		// This ensures Alice/Bob can see the 'Core.md' file we just created
+		linkFile("Library", spaceDir) 
+		// --------------------------
+
+		// User Links (From YAML)
 		for _, relPath := range rules.Paths {
 			if relPath == "/" {
 				linkAllFiles(RepoRoot, spaceDir)
