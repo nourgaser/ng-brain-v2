@@ -10,8 +10,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/login.html:/usr/share/nginx/html/login.html:ro
     environment:
-      - VIRTUAL_HOST=docs2.nourgaser.com
-      - LETSENCRYPT_HOST=docs2.nourgaser.com
+      - VIRTUAL_HOST=docs2.nourgaser.com,alice.docs2.nourgaser.com
+      - LETSENCRYPT_HOST=docs2.nourgaser.com,alice.docs2.nourgaser.com
       - PORT=80
     expose:
       - "80"
@@ -52,6 +52,19 @@ services:
     volumes:
       - ./content:/content # Read config
       - ./spaces:/spaces # Write symlinks
+
+  sb-alice:
+    image: ghcr.io/silverbulletmd/silverbullet
+    container_name: ng-alice
+    restart: always
+    environment:
+      - PUID=1001
+      - PGID=1001
+      # IMPORTANT: If we use path-based routing (/portal/alice), 
+      # we assume the app handles relative links well.
+    volumes:
+      - ./spaces/alice:/space
+      - ./content:/content
 
 networks:
   default:
