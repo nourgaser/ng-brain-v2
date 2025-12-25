@@ -22,7 +22,9 @@ services:
       - proxy-net    # Talk to Host Nginx Proxy
 
   sb-writer:
-    image: ghcr.io/silverbulletmd/silverbullet
+    build:
+      context: .
+      dockerfile: Dockerfile.sb
     container_name: ng-writer
     restart: always
     environment:

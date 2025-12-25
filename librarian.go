@@ -222,9 +222,21 @@ server {
 func linkAllFiles(srcDir, destDir string) {
 	files, err := ioutil.ReadDir(srcDir)
 	if err != nil { return }
+	
+	// Check if this is the Writer space
+	isWriter := strings.HasSuffix(destDir, "/writer")
+
 	for _, f := range files {
 		name := f.Name()
-		if name == ".git" || name == "permissions.yaml" { continue }
+		
+		// Skip config/system files
+		if name == "permissions.yaml" { continue }
+
+		// ONLY link .git for the Writer (Admin)
+		if name == ".git" {
+			if !isWriter { continue }
+		}
+
 		linkFile(name, destDir)
 	}
 }
