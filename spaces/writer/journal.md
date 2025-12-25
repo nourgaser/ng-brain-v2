@@ -1,1 +1,0 @@
-../../content/journal.md
