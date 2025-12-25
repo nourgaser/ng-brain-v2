@@ -5,7 +5,7 @@ testinggg 123
 
 wow
 
-```
+```mermaid
 graph LR
 A[Librarian] --> B{Config Changed?}
 B -- Yes --> C[Rebuild Spaces]
