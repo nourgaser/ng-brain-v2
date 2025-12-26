@@ -1,8 +1,7 @@
-# 🧠 ng-brain
-> A self-hosted, text-first digital garden OS.
-> Powered by SilverBullet, Nginx, and Docker.
+# ng-brain
+> A self-hosted, text-first digital garden OS. Powered by SilverBullet, Nginx, and Docker.
 > 
-ng-brain is an opinionated, privacy-focused architecture for hosting a digital second brain. It separates the Engine (this repository) from the Content (your data), allowing you to upgrade, destroy, and replicate the infrastructure without ever touching your actual notes.
+**ng-brain** is an opinionated, privacy-focused architecture for hosting a digital second brain. It separates the Engine (this repository) from the Content (your data), allowing you to upgrade, destroy, and replicate the infrastructure without ever touching your actual notes.
 It transforms a standard SilverBullet instance into a multi-user platform with public/private access, automatic background versioning, and per-user permission management.
 
 ## ✨ Features
@@ -50,15 +49,23 @@ graph TD
 
 ### 1. Installation
 #### Clone the Engine
+
+```
 git clone https://github.com/nourgaser/ng-brain.git
 cd ng-brain
+```
 
 ### Create the Content Directory (Your inner brain)
+
+```
 mkdir content
 cd content && git init && cd ..
+```
 
 ### 2. Configuration
-Create a .env file based on the template:
+Create a `.env` file based on the template:
+
+```
 #### Domains
 PUBLIC_HOST=docs.nourgaser.com
 ADMIN_HOST=admin.nourgaser.com
@@ -92,7 +99,8 @@ spaces:
 ```
 
 ### 4. Launch
-docker compose up -d
+
+`docker compose up -d`
 
 ### Access your Writer
 
@@ -101,8 +109,8 @@ At https://admin.yourdomain.com and start writing!
 ## 🛠 Advanced Usage
 
 ### The "Ghost" Committer
-The ng-watcher service runs locally. It checks for changes every 5 minutes.
- * Logs: docker logs -f ng-watcher
+The `ng-watcher` service runs locally. It checks for changes every 5 minutes.
+ * Logs: `docker logs -f ng-watcher`
  * Force Save: Open the Command Palette ###
 
 ### (Cmd+K) and run Git: Snapshot Now.
