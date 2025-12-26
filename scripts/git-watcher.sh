@@ -10,6 +10,24 @@ CONTENT_BRANCH=${CONTENT_BRANCH:-main}
 HOME=${HOME:-/home/git}
 REPO_DIR=/repo
 
+LOCKFILE="/tmp/git-watcher.lock"
+
+with_lock() {
+  if [ -f "$LOCKFILE" ]; then
+    log "⚠️  Sync in progress, skipping..."
+    return
+  fi
+  touch "$LOCKFILE"
+  
+  # Ensure lock is removed even if the command fails
+  trap 'rm -f "$LOCKFILE"' EXIT
+  
+  "$@"
+  
+  rm -f "$LOCKFILE"
+  trap - EXIT
+}
+
 install_tools() {
   if command -v inotifywait >/dev/null 2>&1; then return; fi
   apk add --no-cache openssh-client inotify-tools >/dev/null
@@ -132,6 +150,19 @@ sync_repo() {
   fi
 }
 
+run_webhook_listener() {
+  log "📡 Webhook Listener active on port 9000"
+  while true; do
+    # Listen on port 9000. 
+    # When a request comes in, send a 200 OK and trigger sync.
+    # The 'echo' sends the HTTP response headers back to GitHub.
+    echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | nc -l -p 9000 >/dev/null
+    
+    log "⚡ Webhook triggered!"
+    with_lock sync_repo "webhook"
+  done
+}
+
 run_watch_loop() {
   # Wait for events, but ignore the .git directory
   # The 'read' with a timeout allows us to batch events slightly
@@ -152,15 +183,23 @@ run_watch_loop() {
   done
 }
 
+# --- EXECUTION ---
 install_tools
 setup_ssh
 setup_git
 mkdir -p "$REPO_DIR"
-bootstrap_repo
-sync_repo "startup"
 
+# Clean up stale locks on startup
+rm -f "$LOCKFILE"
+
+bootstrap_repo
+with_lock sync_repo "startup"
 log "Fixing ownership for user 1001..."
 chown -R 1001:1001 "$REPO_DIR"
 
+# Start the listener in the background
+run_webhook_listener &
+
+# Start the file watcher (blocking)
 run_watch_loop
 wait

@@ -18,6 +18,8 @@ http {
         }
     }
 
+    upstream git-watcher { server ng-watcher:9000; }
+
     # Admin brain (write-enabled)
     server {
         listen 80;
@@ -29,6 +31,12 @@ http {
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "Upgrade";
             proxy_set_header Host $host;
+        }
+
+        location /_github_webhook {
+            proxy_pass http://git-watcher;
+            # GitHub sends POST requests, so we must allow them
+            proxy_method POST;
         }
     }
 

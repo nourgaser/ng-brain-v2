@@ -1,147 +1,157 @@
-# ng-brain
-Self-hosted, text-first digital garden OS powered by SilverBullet, Nginx, and Docker.
+# 🧠 ng-brain
 
-**ng-brain** separates the Engine (this repo) from the Content (your data) so you can upgrade or replace infrastructure without touching your notes. It turns a standard SilverBullet instance into a multi-user platform with public/private access, automatic background versioning, and per-user permissions.
+> **A self-hosted, text-first digital garden OS.**
+> Powered by [SilverBullet](https://silverbullet.md), Nginx, and Docker.
 
-## Overview
-- Engine: Docker, Nginx templates, and the Go-based Librarian orchestrator (ephemeral).
-- Content: Your Git repo at ./content (ignored by the engine, fully yours).
-- Remote-first: The content repo clones from a remote (SSH or token) and syncs automatically.
-- Outcome: Multi-tenant, permissioned SilverBullet with public docs, private writer, and per-user sandboxes.
+**ng-brain** separates the **Engine** (infrastructure) from the **Content** (data), allowing you to upgrade or destroy the system without touching your notes. It transforms a standard SilverBullet instance into a multi-user platform with bidirectional GitHub sync, public/private access, and persistent per-user sandboxes.
 
-## Features
-- Text-first workflow: author in your editor of choice (VS Code, Vim, Emacs, etc.) while collaborators get a lightweight web UI for quick access.
-- Remote Git sync: clones on startup and keeps ./content in lockstep with your remote (SSH key or token-supported) using file-system events.
-- Gatekeeper: Unified Nginx reverse proxy routing public, admin, and per-user subdomains.
-- Librarian: Go orchestrator reading permissions.yaml to spin up/tear down user containers and manage symlinks.
-- Ghost Watcher: Event-driven git snapshots and syncs triggered on file changes (no fixed polling interval).
-- Time Travel UI: Sidebar plugin for commit history, diffs, and read-only past versions.
-- Centralized Tooling: Shared plugins (Mermaid, Excalidraw, TreeView) updated once and propagated to all spaces.
+## ✨ Features
 
-## Architecture
-ng-brain follows a split-brain model: Engine (infrastructure) vs. Content (data).
+* **⚡ Real-Time Bidirectional Sync:**
+* **Local → Remote:** File system watchers (`inotify`) detect changes instantly and push to Git.
+* **Remote → Local:** A lightweight sidecar listens for GitHub Webhooks to pull changes the moment you push from another device.
 
-## Demo
-- Live public SilverBullet reader: https://docs.nourgaser.com
+
+* **🏠 Persistent User Homes:** Users (Alice, Bob) get real, physical directories inside the repo (`content/homes/alice`). Their personal files persist, while shared projects are symlinked into their space.
+* **🛡️ Conflict Safety:** If a sync conflict occurs, the system automatically creates a `conflict-YYYY-MM-DD` branch on the remote to save your work, then resets local to `main` to prevent lockups.
+* **🤖 The Librarian:** A Go orchestrator that watches `permissions.yaml` to dynamically spin up/tear down user containers and manage symlinks in real-time.
+* **🏰 The Gatekeeper:** Unified Nginx reverse proxy that handles routing for public docs (`docs.domain`), admin writer (`admin.domain`), and user subdomains (`alice.domain`).
+* **⏳ Time Travel UI:** A custom Space Lua sidebar that provides commit history, instantaneous diffs, and read-only views of past file versions—all running locally.
+
+## 🏗 Architecture
+
+**ng-brain** follows a "Split-Brain" philosophy. The **Engine** is ephemeral; the **Content** is the source of truth.
 
 ```mermaid
 graph TD
-    User[User]
-    Nginx[Gatekeeper]
-    Writer[SB Writer]
-    Reader[SB Reader]
-    Alice[SB Alice]
-    Librarian[The Librarian]
-    Perms[permissions.yaml]
-    Ghost[Ghost Watcher]
-    Content[./content]
-
-    subgraph Infrastructure
-        Librarian -->|Watches| Perms
+    User[User] -->|https| Nginx[Gatekeeper]
+    Nginx -->|admin.com| Writer[SB Admin]
+    Nginx -->|docs.com| Reader[SB Reader]
+    Nginx -->|alice.com| Alice[SB Alice]
+    
+    subgraph "Infrastructure"
+        Librarian[The Librarian] -->|Watches| Perms[permissions.yaml]
         Librarian -->|Spawns| Alice
-        Ghost -->|Commits| Content
+        Ghost[Git Watcher] -->|Syncs| Remote[GitHub / Remote Git]
     end
 
-    subgraph DataPersistence
-        Writer -->|Mounts| Content
-        Reader -->|Mounts| Content
-        Alice -->|Symlinks| Content
+    subgraph "Data Persistence"
+        Writer -->|Direct Mount| Content[./content]
+        Reader -->|Direct Mount| Content
+        Alice -->|Mounts| Home[./content/homes/alice]
+        Home -.->|Symlinks| Project[./content/projects]
     end
 
-    User -->|https| Nginx
-    Nginx -->|admin.yourdomain.com| Writer
-    Nginx -->|docs.yourdomain.com| Reader
-    Nginx -->|alice.yourdomain.com| Alice
 ```
 
-## Requirements
-- Docker and Docker Compose
-- Domain with wildcard DNS (*.yourdomain.com) pointing to the host
+## 🚀 Quick Start
 
-## Quick Start
-1) Clone the engine
+### Prerequisites
+
+* Docker & Docker Compose
+* A domain name with wildcard DNS (`*.yourdomain.com`) pointing to your host.
+
+### 1. Installation
+
 ```bash
 git clone https://github.com/nourgaser/ng-brain.git
 cd ng-brain
+
 ```
 
-2) Create a .env file (see Configuration) with CONTENT_REMOTE set to your Git URL (SSH or token) and optional CONTENT_BRANCH (defaults to main).
+### 2. Configuration
 
-3) Launch the stack
-```bash
-docker compose up -d
-```
+Create a `.env` file. You **must** provide a remote Git repository (GitHub/GitLab) for the content.
 
-4) Access
-- Writer: https://admin.yourdomain.com
-- Reader: https://docs.yourdomain.com
-- User spaces: https://<user>.yourdomain.com
-
-## Configuration
-Sample .env (adjust domains and paths):
-```env
-# Domains
+```ini
+# --- Identity & Domains ---
 PUBLIC_HOST=docs.nourgaser.com
 ADMIN_HOST=admin.nourgaser.com
-SPACE_DOMAIN_SUFFIX=yourdomain.com
+SPACE_DOMAIN_SUFFIX=nourgaser.com
+DEFAULT_EMAIL=bot@ng-brain.local
 
-# Content Git
+# --- Content Repository (Source of Truth) ---
 CONTENT_REMOTE=git@github.com:you/your-notes.git
 CONTENT_BRANCH=main
-# Optional (base64-encoded)
+# Optional: Base64 encoded SSH Key (if not mounting ~/.ssh)
 # CONTENT_REMOTE_SSH_KEY=...
-# CONTENT_REMOTE_SSH_KNOWN_HOSTS=...
 
-# Credentials
+# --- Auth ---
 SB_WRITER_USER=admin
 SB_WRITER_PASSWORD=change_this_immediately
 
-# Host paths
+# --- Infrastructure ---
 HOST_ROOT_DIR=/home/user/docker/ng-brain
+
 ```
 
-## Permissions
-Define users and access levels in content/permissions.yaml. The Librarian consumes this file and provisions containers dynamically.
+### 3. Permissions
+
+Define users and their access levels in `content/permissions.yaml`.
 
 ```yaml
 spaces:
+  # Public Reader (Root Domain)
   public:
     paths:
       - "index.md"
       - "assets/"
-      - "Library/Core.md"
 
+  # Restricted User (Subdomain: alice.yourdomain.com)
   alice:
     password: "secret_password"
     paths:
+      # These appear inside Alice's home directory
       - "projects/secret-game/"
       - "assets/"
+
 ```
 
-## Services
-- Gatekeeper (Nginx): Routes public, admin, and per-user subdomains.
-- Librarian (Go): Watches permissions.yaml, manages per-user containers and symlinks.
-- Ghost Watcher: Event-driven git sync against CONTENT_REMOTE (clone/pull/rebase/push with conflict branches on failure).
-- SilverBullet Writer/Reader: Authenticated writer and public read-only instance.
+### 4. Launch
 
-## Advanced Usage
-- Ghost Watcher
-  - Logs: `docker logs -f ng-watcher`
-  - On-demand snapshot: open the Command Palette and run "Git: Snapshot Now".
-- Remote auth
-  - SSH: set CONTENT_REMOTE to SSH URL and provide CONTENT_REMOTE_SSH_KEY (base64) plus CONTENT_REMOTE_SSH_KNOWN_HOSTS if needed.
-  - Token: use an HTTPS URL that embeds a token or rely on a credential helper baked into the image.
-- Conflict handling
-  - If a rebase/push conflict occurs, the watcher creates `conflict-YYYYMMDD-HHMMSS` in the remote with current changes and resets the main branch locally.
-- History Sidebar
-  - Uses the bundled Lua script to show history/diffs inside SilverBullet.
+```bash
+docker compose up -d
 
-## Roadmap
-- [x] Remote Git sync via event-driven watcher (SSH or token).
-- [ ] Docker-in-Docker builds for custom per-user images.
-- [ ] CI/CD to auto-deploy engine changes.
-- [ ] Unified search across spaces.
-- [ ] Off-site backups for ./content (S3/R2).
+```
+
+## 🔌 Real-Time Sync (Webhooks)
+
+To enable instant updates from GitHub (e.g., when you edit on mobile or VS Code), add a Webhook:
+
+1. Go to your GitHub Repo **Settings** -> **Webhooks**.
+2. **Payload URL:** `https://admin.yourdomain.com/_github_webhook`
+3. **Content type:** `application/json`
+4. **Events:** Just the `push` event.
+
+The `git-watcher` service listens on an internal port and triggers a pull immediately upon receiving the signal.
+
+## 🛠 Advanced Usage
+
+### The Conflict Strategy
+
+If you edit a file locally and remotely at the same time:
+
+1. The watcher detects the conflict during the pull/rebase.
+2. It takes your **Local** changes and pushes them to a new branch: `conflict-<timestamp>`.
+3. It hard resets your **Local** state to match the **Remote** (Server Truth).
+4. You can then merge the conflict branch manually at your leisure.
+
+### Manual Snapshots
+
+While the system auto-syncs on file save, you can force a snapshot via the Command Palette:
+
+* `Cmd+K` -> **`Git: Snapshot Now`**
+
+## 🗺 Roadmap
+
+* [x] Bidirectional Sync (Event-driven + Webhooks)
+* [x] Persistent User Homes (`content/homes/user`)
+* [x] Permission Revocation (Librarian cleans up symlinks)
+* [ ] Docker-in-Docker builds for custom per-user images
+* [ ] CI/CD Pipeline for Engine updates
+* [ ] Unified Search (across all spaces)
+* [ ] Off-site Backups (S3/R2)
 
 ## 📄 License
-MIT License. Built on top of SilverBullet by Zef Hemel.
+
+MIT License. Built on top of [SilverBullet](https://silverbullet.md).
