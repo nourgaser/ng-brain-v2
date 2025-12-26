@@ -66,6 +66,7 @@ cd content && git init && cd ..
 Create a `.env` file based on the template:
 
 ```
+
 #### Domains
 PUBLIC_HOST=docs.nourgaser.com
 ADMIN_HOST=admin.nourgaser.com
@@ -80,6 +81,7 @@ HOST_ROOT_DIR=/home/user/docker/ng-brain
 
 ### 3. Permissions
 Define your users and their access levels in content/permissions.yaml. The Librarian will read this and auto-configure the system.
+```
 
 ```yaml
 spaces:
