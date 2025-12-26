@@ -1,0 +1,18 @@
+spaces:
+  writer:
+    paths:
+      - "/"
+  
+  public:
+    paths:
+      - "CONFIG.md"
+      - "assets/"
+      - "index.md"
+
+  alice:
+    password: "wonderland"
+    paths:
+      - "CONFIG.md"
+      - "assets/"
+      - "index.md"
+      - "secret/"
