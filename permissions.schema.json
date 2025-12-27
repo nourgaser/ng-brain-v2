@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ng-brain permissions (template)",
+  "type": "object",
+  "properties": {
+    "spaces": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "admin": { "type": "boolean", "default": false },
+          "password": { "type": "string" },
+          "paths": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false,
+        "if": {
+          "properties": { "admin": { "const": true } }
+        },
+        "then": {
+          "properties": {
+            "paths": { "type": "array", "maxItems": 0 }
+          }
+        },
+        "else": {
+          "required": ["paths"],
+          "properties": {
+            "paths": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["spaces"],
+  "additionalProperties": false
+}
