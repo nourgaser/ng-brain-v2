@@ -1,42 +1,129 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ng-brain permissions (template)",
+  "title": "ng-brain permissions",
   "type": "object",
-  "properties": {
-    "spaces": {
+  "$defs": {
+    "spaceBase": {
       "type": "object",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "admin": { "type": "boolean", "default": false },
-          "password": { "type": "string" },
-          "paths": {
-            "type": "array",
-            "items": { "type": "string" }
+      "properties": {
+        "admin": {
+          "type": "boolean",
+          "default": false
+        },
+        "password": {
+          "type": "string"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "space": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/spaceBase"
         },
-        "additionalProperties": false,
-        "if": {
-          "properties": { "admin": { "const": true } }
-        },
-        "then": {
-          "properties": {
-            "paths": { "type": "array", "maxItems": 0 }
-          }
-        },
-        "else": {
-          "required": ["paths"],
-          "properties": {
-            "paths": {
-              "type": "array",
-              "items": { "type": "string" },
-              "minItems": 1
+        {
+          "if": {
+            "properties": {
+              "admin": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "paths": {
+                "const": [],
+                "errorMessage": "admin spaces must not declare paths"
+              }
+            }
+          },
+          "else": {
+            "required": [
+              "paths"
+            ],
+            "properties": {
+              "paths": {
+                "minItems": 1,
+                "errorMessage": {
+                  "minItems": "non-admin spaces must list at least one path"
+                }
+              }
+            },
+            "errorMessage": {
+              "required": {
+                "paths": "non-admin spaces must declare paths"
+              }
             }
           }
         }
+      ],
+      "required": [
+        "password"
+      ],
+      "errorMessage": {
+        "required": {
+          "password": "non-public spaces must declare a password"
+        },
+        "additionalProperties": "space definitions accept only admin, password, and paths"
       }
     }
   },
-  "required": ["spaces"],
-  "additionalProperties": false
+  "properties": {
+    "spaces": {
+      "type": "object",
+      "properties": {
+        "public": {
+          "type": "object",
+          "properties": {
+            "admin": {
+              "const": false,
+              "errorMessage": "public.admin must be false; public space is read-only"
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "errorMessage": {
+                "minItems": "public.paths must list at least one path"
+              }
+            }
+          },
+          "required": [
+            "paths"
+          ],
+          "additionalProperties": false,
+          "errorMessage": {
+            "required": {
+              "paths": "public.paths is required"
+            },
+            "additionalProperties": "public accepts only admin and paths; password is not allowed"
+          }
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/space"
+      },
+      "errorMessage": {
+        "type": "spaces must be an object keyed by space name"
+      }
+    }
+  },
+  "required": [
+    "spaces"
+  ],
+  "additionalProperties": false,
+  "errorMessage": {
+    "required": {
+      "spaces": "`spaces` object is required at the top level"
+    },
+    "additionalProperties": "only the `spaces` field is allowed at the top level"
+  }
 }
